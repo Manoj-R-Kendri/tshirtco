@@ -1,8 +1,6 @@
 ﻿import User from '../models/User.js';
 import asyncHandler from 'express-async-handler';
 import jwt from 'jsonwebtoken';
-import crypto from 'crypto';
-import { sendEmail, sendOTPEmail } from '../utils/emailService.js';
 
 // @desc    Send OTP for signup
 // @route   POST /api/auth/send-otp
@@ -273,10 +271,45 @@ export const resendOTP = asyncHandler(async (req, res) => {
   }
 });
 
-// Update register function to use OTP flow
+// Basic register endpoint used by the current frontend signup form
 export const register = asyncHandler(async (req, res) => {
-  res.status(400);
-  throw new Error('Please use /send-otp endpoint for registration');
+  const { name, email, password } = req.body;
+
+  if (!name || !email || !password) {
+    return res.status(400).json({
+      success: false,
+      message: 'Please provide name, email and password'
+    });
+  }
+
+  const existingUser = await User.findOne({ email });
+  if (existingUser) {
+    return res.status(400).json({
+      success: false,
+      message: 'User already exists with this email'
+    });
+  }
+
+  const user = await User.create({
+    name,
+    email,
+    password,
+    isActive: true,
+    emailVerified: true
+  });
+
+  const token = generateToken(user._id);
+
+  res.status(201).json({
+    success: true,
+    token,
+    user: {
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      isAdmin: user.isAdmin
+    }
+  });
 });
 
 // @desc    Auth user & get token
@@ -370,17 +403,24 @@ export const login = asyncHandler(async (req, res) => {
 export const getMe = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id);
 
-  if (user) {
-    res.json({
+  if (!user) {
+    res.status(404);
+    throw new Error('User not found');
+  }
+
+  res.json({
+    success: true,
+    data: {
       _id: user._id,
       name: user.name,
       email: user.email,
       isAdmin: user.isAdmin,
-    });
-  } else {
-    res.status(404);
-    throw new Error('User not found');
-  }
+      profile: user.profile,
+      addresses: user.addresses,
+      preferences: user.preferences,
+      privacy: user.privacy,
+    }
+  });
 });
 
 // @desc    Forgot password
@@ -481,25 +521,64 @@ const generateToken = (id) => {
 export const updateProfile = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id);
 
-  if (user) {
-    user.name = req.body.name || user.name;
-    user.email = req.body.email || user.email;
-
-    if (req.body.password) {
-      user.password = req.body.password;
-    }
-
-    const updatedUser = await user.save();
-
-    res.json({
-      _id: updatedUser._id,
-      name: updatedUser.name,
-      email: updatedUser.email,
-      isAdmin: updatedUser.isAdmin,
-      token: generateToken(updatedUser._id),
-    });
-  } else {
+  if (!user) {
     res.status(404);
     throw new Error('User not found');
   }
+
+  const {
+    name,
+    email,
+    password,
+    profile = {},
+    addresses,
+    preferences = {},
+    privacy = {}
+  } = req.body;
+
+  if (name) user.name = name;
+  if (email) user.email = email;
+  if (password) user.password = password;
+
+  user.profile = {
+    ...user.profile?.toObject?.() ?? user.profile,
+    ...profile,
+  };
+
+  if (Array.isArray(addresses)) {
+    user.addresses = addresses.map((address) => ({
+      ...address,
+      addressId: address.addressId || address.id || new mongoose.Types.ObjectId().toString(),
+    }));
+
+    if (!user.addresses.some((addr) => addr.isDefault)) {
+      user.addresses[0].isDefault = true;
+    }
+  }
+
+  user.preferences = {
+    ...user.preferences?.toObject?.() ?? user.preferences,
+    ...preferences,
+  };
+
+  user.privacy = {
+    ...user.privacy?.toObject?.() ?? user.privacy,
+    ...privacy,
+  };
+
+  const updatedUser = await user.save();
+
+  res.json({
+    success: true,
+    message: 'Profile updated successfully',
+    data: {
+      _id: updatedUser._id,
+      name: updatedUser.name,
+      email: updatedUser.email,
+      profile: updatedUser.profile,
+      addresses: updatedUser.addresses,
+      preferences: updatedUser.preferences,
+      privacy: updatedUser.privacy,
+    }
+  });
 });

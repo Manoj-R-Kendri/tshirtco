@@ -10,7 +10,7 @@ import {
   createProductReview
 } from '../controllers/productController.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
-import { validateProduct, validateStockUpdate } from '../middleware/validateProduct.js';
+import { validateProduct } from '../middleware/validationMiddleware.js';
 import upload from '../middleware/uploadMiddleware.js';
 
 const router = express.Router();
@@ -30,7 +30,7 @@ router.get('/', getAdminProducts);
 router.post(
   '/', 
   upload.array('images', 10), // Handle multiple file uploads (max 10)
-  validateProduct,
+  validateProduct.create,
   createProduct
 );
 
@@ -45,7 +45,7 @@ router.get('/:id', getProductById);
 router.put(
   '/:id', 
   upload.array('images', 10), // Handle multiple file uploads (max 10)
-  validateProduct,
+  validateProduct.update,
   updateProduct
 );
 
@@ -57,7 +57,7 @@ router.delete('/:id', deleteProduct);
 // @route   PUT /api/admin/products/:id/stock
 // @desc    Update product stock
 // @access  Private/Admin
-router.put('/:id/stock', validateStockUpdate, updateProductStock);
+router.put('/:id/stock', validateProduct.updateStock, updateProductStock);
 
 // @route   PUT /api/admin/products/:id/active
 // @desc    Toggle product active status

@@ -11,22 +11,32 @@ import { orderValidation, authValidation, userValidation, productValidation } fr
 export const validateRequest = (schema, property = 'body') => {
   return async (req, res, next) => {
     try {
+      console.log('Validation - Request body:', JSON.stringify(req.body, null, 2));
       const { error, value } = schema.validate(req[property], { 
         abortEarly: false,
         stripUnknown: true,
         allowUnknown: true
       });
+      
+      if (error) {
+        console.log('Validation errors:', JSON.stringify(error.details, null, 2));
+      }
 
       if (error) {
+        console.log('Validation errors:', error.details);
         const errors = error.details.map(detail => ({
           field: detail.path.join('.'),
-          message: detail.message.replace(/\"/g, '')
+          message: detail.message.replace(/\"/g, ''),
+          type: detail.type,
+          context: detail.context
         }));
         
         return res.status(400).json({ 
           success: false, 
           message: 'Validation failed',
-          errors 
+          error: 'ValidationError',
+          details: errors,
+          receivedData: req.body
         });
       }
 

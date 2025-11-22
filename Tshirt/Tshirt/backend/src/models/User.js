@@ -2,6 +2,66 @@
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 
+const addressSchema = new mongoose.Schema(
+  {
+    addressId: {
+      type: String,
+      default: () => new mongoose.Types.ObjectId().toString()
+    },
+    type: {
+      type: String,
+      enum: ['home', 'work', 'other'],
+      default: 'home'
+    },
+    isDefault: {
+      type: Boolean,
+      default: false
+    },
+    firstName: { type: String, default: '' },
+    lastName: { type: String, default: '' },
+    addressLine1: { type: String, default: '' },
+    addressLine2: { type: String, default: '' },
+    city: { type: String, default: '' },
+    state: { type: String, default: '' },
+    pincode: { type: String, default: '' },
+    country: { type: String, default: 'India' },
+    phone: { type: String, default: '' }
+  },
+  { _id: false }
+);
+
+const profileSchema = new mongoose.Schema(
+  {
+    firstName: { type: String, default: '' },
+    lastName: { type: String, default: '' },
+    phone: { type: String, default: '' },
+    dateOfBirth: { type: Date, default: null },
+    gender: { type: String, default: '' },
+    bio: { type: String, default: '' },
+    profilePicture: { type: String, default: '' }
+  },
+  { _id: false }
+);
+
+const preferenceSchema = new mongoose.Schema(
+  {
+    preferredSize: { type: String, default: '' },
+    favoriteColors: { type: [String], default: [] },
+    newsletter: { type: Boolean, default: true },
+    smsUpdates: { type: Boolean, default: false }
+  },
+  { _id: false }
+);
+
+const privacySchema = new mongoose.Schema(
+  {
+    profileVisibility: { type: String, default: 'private' },
+    showEmail: { type: Boolean, default: false },
+    showPhone: { type: Boolean, default: false }
+  },
+  { _id: false }
+);
+
 const userSchema = new mongoose.Schema(
   {
     name: {
@@ -24,6 +84,26 @@ const userSchema = new mongoose.Schema(
       required: [true, 'Please add a password'],
       minlength: [6, 'Password must be at least 6 characters'],
       select: false
+    },
+    profile: {
+      type: profileSchema,
+      default: () => ({})
+    },
+    addresses: {
+      type: [addressSchema],
+      default: () => ([{
+        type: 'home',
+        isDefault: true,
+        country: 'India'
+      }])
+    },
+    preferences: {
+      type: preferenceSchema,
+      default: () => ({})
+    },
+    privacy: {
+      type: privacySchema,
+      default: () => ({})
     },
     isAdmin: {
       type: Boolean,

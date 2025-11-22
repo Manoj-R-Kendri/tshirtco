@@ -1,6 +1,7 @@
 ﻿import express from 'express';
 import { getMe, updateProfile } from '../controllers/authController.js';
 import { protect } from '../middleware/authMiddleware.js';
+import { validateUser } from '../middleware/validationMiddleware.js';
 
 const router = express.Router();
 
@@ -11,6 +12,6 @@ router.use(protect);
 router.get('/me', getMe);
 
 // Update user profile
-router.put('/profile', updateProfile);
+router.put('/profile', validateUser.updateProfile, updateProfile);
 
 export default router;

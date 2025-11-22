@@ -20,6 +20,8 @@ router.post('/send-signup-otp', validateAuth.sendOtp, sendSignupOTP);
 router.post('/verify-signup-otp', validateAuth.verifyOtp, verifyOTPAndRegister);
 router.post('/resend-otp', resendOTP);
 router.post('/login', validateAuth.login, login);
+router.post('/signin', validateAuth.login, login); // Add signin route for frontend compatibility
+router.post('/signup', validateAuth.register, register); // Add signup route for frontend compatibility
 router.post('/forgotpassword', validateAuth.forgotPassword, forgotPassword);
 router.put('/resetpassword/:resettoken', validateAuth.resetPassword, resetPassword);
 

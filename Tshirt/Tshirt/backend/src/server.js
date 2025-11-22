@@ -28,6 +28,8 @@ import productRoutes from './routes/productRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
+import adminProductRoutes from './routes/adminProductRoutes.js';
+import cartRoutes from './routes/cartRoutes.js';
 import healthRoutes from './routes/healthRoutes.js';
 
 // Load environment variables
@@ -146,6 +148,8 @@ app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/admin/products', adminProductRoutes);
+app.use('/api/cart', cartRoutes);
 app.use('/health', healthRoutes);
 
 // Static files

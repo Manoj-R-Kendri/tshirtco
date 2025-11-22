@@ -3,6 +3,7 @@ import User from '../models/User.js';
 import Order from '../models/Order.js';
 import Product from '../models/Product.js';
 import Category from '../models/Category.js';
+import Design from '../models/Design.js';
 import asyncHandler from 'express-async-handler';
 
 // @desc    Get dashboard statistics
@@ -1179,6 +1180,90 @@ export const updateUserToAdmin = asyncHandler(async (req, res) => {
     console.error('Error updating user to admin:', error);
     res.status(500).json({
       message: 'Error updating user to admin',
+      error: error.message
+    });
+  }
+});
+
+// @desc    Get customer designs for admin approval
+// @route   GET /api/admin/designs
+// @access  Private/Admin
+export const getCustomerDesigns = asyncHandler(async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    // Get customer designs (not templates)
+    const designs = await Design.find({ template: false })
+      .populate('user', 'name email')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    const total = await Design.countDocuments({ template: false });
+
+    res.json({
+      success: true,
+      data: designs,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching customer designs:', error);
+    res.status(500).json({
+      message: 'Error fetching customer designs',
+      error: error.message
+    });
+  }
+});
+
+// @desc    Approve customer design and convert to product
+// @route   POST /api/admin/designs/:id/approve
+// @access  Private/Admin
+export const approveDesignAsProduct = asyncHandler(async (req, res) => {
+  try {
+    const design = await Design.findById(req.params.id).populate('user');
+    
+    if (!design) {
+      res.status(404);
+      throw new Error('Design not found');
+    }
+
+    // Create product from design
+    const productData = {
+      name: design.name,
+      description: design.description,
+      price: req.body.price || 1499,
+      category: req.body.category || 'unisex',
+      stock: req.body.stock || 50,
+      images: [design.thumbnail, design.previewImage].filter(Boolean),
+      status: 'active',
+      tags: 'custom-design,customer-created',
+      designId: design._id,
+      createdBy: design.user._id
+    };
+
+    const product = await Product.create(productData);
+
+    // Update design status
+    design.status = 'approved';
+    design.productId = product._id;
+    await design.save();
+
+    res.json({
+      success: true,
+      message: 'Design approved and converted to product',
+      data: product
+    });
+  } catch (error) {
+    console.error('Error approving design:', error);
+    res.status(500).json({
+      message: 'Error approving design',
       error: error.message
     });
   }

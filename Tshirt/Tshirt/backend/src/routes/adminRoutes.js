@@ -2,18 +2,25 @@
 import express from "express";
 import { protect, admin } from "../middleware/authMiddleware.js";
 import {
+  getDashboardStats,
   getAllUsers,
   getUserById,
   updateUser,
   deleteUser,
-  createAdmin,
-  getDashboardStats,
   updateUserToAdmin,
+  createAdmin,
+  getOrders,
+  getOrderById,
+  updateOrderStatus,
+  getInventory,
+  updateInventory,
+  getCustomerDesigns,
+  approveDesignAsProduct
 } from "../controllers/adminController.js";
 
 const router = express.Router();
 
-// Apply admin middleware to all routes
+// All admin routes require authentication and admin role
 router.use(protect);
 router.use(admin);
 
@@ -34,6 +41,16 @@ router.route('/users/:id/make-admin')
 
 router.post("/users/admin", createAdmin);
 
+// Order management routes
+router.route('/orders')
+  .get(getOrders);
+
+router.route('/orders/:id')
+  .get(getOrderById);
+
+router.route('/orders/:id/status')
+  .put(updateOrderStatus);
+
 // Product management routes (to be implemented)
 // router.route('/products')
 //   .get()
@@ -44,12 +61,14 @@ router.post("/users/admin", createAdmin);
 //   .put()
 //   .delete();
 
-// Order management routes (to be implemented)
-// router.route('/orders')
-//   .get();
+// Inventory management routes
+router.get('/inventory', getInventory);
+router.put('/inventory/:productId', updateInventory);
 
-// router.route('/orders/:id')
-//   .get()
-//   .put();
+// Design management routes
+router.route('/designs')
+  .get(getCustomerDesigns);
+
+router.post('/designs/:id/approve', approveDesignAsProduct);
 
 export default router;
